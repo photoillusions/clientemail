@@ -9,12 +9,16 @@ import { google } from 'googleapis';
 import stream from 'stream';
 import cors from 'cors';
 import 'dotenv/config';
+import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Enable CORS for all routes to allow requests from your frontend
 app.use(cors());
+// Enable JSON body parsing for our new endpoint
+app.use(express.json());
+
 
 // Set up multer for in-memory file storage
 const upload = multer({
@@ -184,6 +188,42 @@ app.delete('/submissions/:fileId', async (req, res) => {
     }
     res.status(500).json({ message: `Server error: ${error.message}` });
   }
+});
+
+// Endpoint to generate email drafts
+app.post('/generate-email', async (req, res) => {
+    try {
+        const { email, folderNumber } = req.body;
+        if (!email || !folderNumber) {
+            return res.status(400).json({ message: 'Email and folder number are required.' });
+        }
+        
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("The GEMINI_API_KEY environment variable is not set on the server.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
+        const prompt = `
+            You are a friendly assistant for "Photo Illusions", a professional event photography company.
+            A customer with the email "${email}" has requested a digital copy of their photo. Their photo is from folder number "${folderNumber}".
+            Generate a short, professional, and friendly email body for them. 
+            Mention that their photo is attached and thank them for choosing Photo Illusions at the event.
+            Do not include a subject line or signature, only the body of the email.
+        `;
+        
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        
+        const draft = response.text;
+        res.status(200).json({ draft });
+
+    } catch (error) {
+        console.error('Error generating email draft:', error);
+        res.status(500).json({ message: `Server error while generating email: ${error.message}` });
+    }
 });
 
 
