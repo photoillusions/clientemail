@@ -198,11 +198,11 @@ app.post('/generate-email', async (req, res) => {
             return res.status(400).json({ message: 'Email and folder number are required.' });
         }
         
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error("The GEMINI_API_KEY environment variable is not set on the server.");
+        if (!process.env.API_KEY) {
+            throw new Error("The API_KEY environment variable is not set on the server.");
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         
         const prompt = `
             You are a friendly assistant for "Photo Illusions", a professional event photography company.
