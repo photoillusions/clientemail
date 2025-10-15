@@ -3,11 +3,19 @@ import type { Submission } from '../types.ts';
 import { EntryCard } from './EntryCard.tsx';
 import { generateEmailDraft } from '../services/geminiService.ts';
 import { EmailModal } from './EmailModal.tsx';
+import { Login } from './Login.tsx';
+import { LogoutIcon } from './icons/LogoutIcon.tsx';
 
-// IMPORTANT: Replace this URL with the real URL of your deployed backend service.
-const BACKEND_BASE_URL = 'https://your-render-service-url.onrender.com';
+// This points to the local backend. For production, replace with your deployed service URL.
+const BACKEND_BASE_URL = 'http://localhost:3001';
+
+// This would typically be a more secure check, but for this example, a simple string comparison is fine.
+const ADMIN_PASSWORD = 'photo-admin-2024';
 
 export const Dashboard: React.FC = () => {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem('isAuthenticated') === 'true');
+
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -16,6 +24,12 @@ export const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only fetch data if authenticated
+    if (!isAuthenticated) {
+        setIsLoading(false);
+        return;
+    }
+      
     const fetchSubmissions = async () => {
       try {
         setError(null);
@@ -34,8 +48,24 @@ export const Dashboard: React.FC = () => {
     };
 
     fetchSubmissions();
-  }, []);
+  }, [isAuthenticated]); // Re-run effect when authentication state changes
 
+  const handleLogin = (password: string): boolean => {
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('isAuthenticated', 'true');
+      setIsAuthenticated(true);
+      return true;
+    }
+    return false;
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isAuthenticated');
+    setIsAuthenticated(false);
+    // Clear data to prevent flash of old content on re-login
+    setSubmissions([]); 
+  };
+  
   const handleGenerateEmail = async (email: string, folderNumber: string) => {
     const entry = submissions.find(s => s.email === email && s.folderNumber === folderNumber);
     if (!entry) return;
@@ -79,6 +109,10 @@ export const Dashboard: React.FC = () => {
     setGeneratedEmail(null);
     setSelectedEntry(null);
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
   
   const renderContent = () => {
     if (isLoading) {
@@ -122,11 +156,18 @@ export const Dashboard: React.FC = () => {
         <EmailModal entry={selectedEntry} emailBody={generatedEmail} onClose={closeModal} />
       )}
       <div className="container mx-auto p-4 md:p-8">
-        <header className="text-center mb-10">
+        <header className="relative text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
             Photo Illusions Dashboard
           </h1>
           <p className="text-gray-400 mt-2">Manage customer photo submissions.</p>
+          <button
+            onClick={handleLogout}
+            className="absolute top-0 right-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="Log out"
+          >
+            <LogoutIcon className="w-6 h-6" />
+          </button>
         </header>
         
         {error && (
