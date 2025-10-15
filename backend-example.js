@@ -3,12 +3,12 @@
 // It creates a secure API endpoint that accepts an image file
 // and uploads it to a specific Google Drive folder.
 
-const express = require('express');
-const multer = require('multer');
-const { google } = require('googleapis');
-const stream = require('stream');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import multer from 'multer';
+import { google } from 'googleapis';
+import stream from 'stream';
+import cors from 'cors';
+import 'dotenv/config';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
