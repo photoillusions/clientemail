@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Camera } from './components/Camera';
-import { CameraIcon } from './components/icons/CameraIcon';
-import { uploadToDrive } from './services/googleDriveService';
+import { Camera } from './components/Camera.tsx';
+import { CameraIcon } from './components/icons/CameraIcon.tsx';
+import { uploadToDrive } from './services/googleDriveService.ts';
 
 const CheckIcon: React.FC<{ className?: string }> = ({ className = "w-16 h-16" }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
