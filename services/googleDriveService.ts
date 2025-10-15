@@ -1,4 +1,4 @@
-import type { Submission } from '../types';
+import type { Submission } from '../types.ts';
 
 /**
  * Converts a base64 data URL to a Blob object.
@@ -37,7 +37,7 @@ export async function uploadToDrive(photoDataUrl: string, email: string, folderN
   // IMPORTANT: Replace this URL with the real URL of your deployed backend service (e.g., from Render).
   const backendUrl = 'https://your-render-service-url.onrender.com/upload';
 
-  const fileName = `${email}-${folderNumber}.jpg`;
+  const fileName = `${email.replace(/[^a-zA-Z0-9.-]/g, '_')}-${folderNumber}.jpg`;
   const imageBlob = dataUrlToBlob(photoDataUrl);
   
   const formData = new FormData();
@@ -72,3 +72,5 @@ export async function uploadToDrive(photoDataUrl: string, email: string, folderN
     // Provide a more user-friendly error message
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred. Please check your connection and try again.';
     return { success: false, message: errorMessage };
+  }
+}
