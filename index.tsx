@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleGenAI } from "@google/genai";
 
 // --- Types ---
 interface Submission {
@@ -49,28 +47,30 @@ const LogoutIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" })
   </svg>
 );
 
-// --- Services ---
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+const BACKEND_BASE_URL = 'http://localhost:3001';
 
+// --- Services ---
 async function generateEmailDraft(email: string, folderNumber: string): Promise<string> {
   try {
-    const prompt = `
-      You are a friendly assistant for "Photo Illusions", a professional event photography company.
-      A customer with the email "${email}" has requested a digital copy of their photo. Their photo is from folder number "${folderNumber}".
-      Generate a short, professional, and friendly email body for them. 
-      Mention that their photo is attached and thank them for choosing Photo Illusions at the event.
-      Do not include a subject line or signature, only the body of the email.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+    const response = await fetch(`${BACKEND_BASE_URL}/generate-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, folderNumber }),
     });
 
-    return response.text;
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate email draft from server.');
+    }
+    
+    const data = await response.json();
+    return data.draft;
+
   } catch (error) {
     console.error("Error generating email draft:", error);
-    throw new Error("Failed to generate email draft. Please check your API key and network connection.");
+    throw new Error("Failed to generate email draft. Please check your backend connection.");
   }
 }
 
@@ -92,7 +92,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
 
 async function uploadToDrive(photoDataUrl: string, email: string, folderNumber: string): Promise<{ success: boolean; message: string }> {
   console.log('Starting upload process...');
-  const backendUrl = 'http://localhost:3001/upload';
+  const backendUrl = `${BACKEND_BASE_URL}/upload`;
   
   const fileName = `${email}-${folderNumber}-${Date.now()}.jpg`;
   const imageBlob = dataUrlToBlob(photoDataUrl);
@@ -376,7 +376,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, onDelete, onGenerateEmail,
   );
 };
 
-const BACKEND_BASE_URL = 'http://localhost:3001';
+
 const ADMIN_PASSWORD = 'photo-admin-2024';
 
 const Dashboard: React.FC = () => {
@@ -719,4 +719,3 @@ root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
-);
