@@ -50,9 +50,17 @@ export async function uploadToDrive(photoDataUrl: string, email: string, folderN
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      // Use the server's error message if available, otherwise a generic one.
-      throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+      let serverMessage;
+      try {
+        // Try to parse a JSON error message from the backend
+        const errorData = await response.json();
+        serverMessage = errorData.message;
+      } catch {
+        // If it's not JSON, it might be a plain text error
+        serverMessage = await response.text();
+      }
+      // Throw an error with the specific message from the server if available
+      throw new Error(serverMessage || `Upload failed with status: ${response.status}`);
     }
 
     const result = await response.json();
@@ -64,5 +72,3 @@ export async function uploadToDrive(photoDataUrl: string, email: string, folderN
     // Provide a more user-friendly error message
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred. Please check your connection and try again.';
     return { success: false, message: errorMessage };
-  }
-}
