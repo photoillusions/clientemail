@@ -1,8 +1,7 @@
 import React from 'react';
-// FIX: The type 'PhotoEntry' was not exported from '../types'. Changed to 'Submission' which is exported and has the correct properties.
-import type { Submission } from '../types';
-import { TrashIcon } from './icons/TrashIcon';
-import { SparklesIcon } from './icons/SparklesIcon';
+import type { Submission } from '../types.ts';
+import { TrashIcon } from './icons/TrashIcon.tsx';
+import { SparklesIcon } from './icons/SparklesIcon.tsx';
 
 interface EntryCardProps {
   entry: Submission;
