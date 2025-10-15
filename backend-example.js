@@ -80,19 +80,26 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded.' });
     }
+    const { email, folderNumber } = req.body;
+    if (!email || !folderNumber) {
+      return res.status(400).json({ message: 'Email and folder number are required.' });
+    }
 
-    console.log(`Received file: ${req.file.originalname}, Size: ${req.file.size} bytes`);
+    console.log(`Received file: ${req.file.originalname}, Email: ${email}, Folder: ${folderNumber}`);
 
     const drive = getDriveClient();
     const folderId = await getFolderId(drive, process.env.TARGET_FOLDER_NAME);
 
-    // Create a buffer stream from the uploaded file's buffer
     const bufferStream = new stream.PassThrough();
     bufferStream.end(req.file.buffer);
 
     const fileMetadata = {
       name: req.file.originalname,
       parents: [folderId],
+      appProperties: { // Store email and folder number as metadata for reliability
+        email,
+        folderNumber,
+      },
     };
 
     const media = {
@@ -100,7 +107,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       body: bufferStream,
     };
 
-    // Upload the file to Google Drive
     const response = await drive.files.create({
       resource: fileMetadata,
       media: media,
@@ -116,7 +122,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error during file upload:', error);
-    // Check for specific Google API errors
     if (error.response && error.response.data) {
         console.error('Google API Error:', error.response.data.error);
         return res.status(500).json({ message: 'Google API Error: ' + error.response.data.error.message });
@@ -125,11 +130,67 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Endpoint to list all submissions
+app.get('/submissions', async (req, res) => {
+  try {
+    const drive = getDriveClient();
+    const folderId = await getFolderId(drive, process.env.TARGET_FOLDER_NAME);
+
+    const response = await drive.files.list({
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'files(id, name, thumbnailLink, appProperties)',
+      pageSize: 200,
+      orderBy: 'createdTime desc',
+    });
+
+    const submissions = response.data.files
+      .filter(file => file.appProperties) // Only include files with our custom metadata
+      .map(file => ({
+        id: file.id,
+        email: file.appProperties.email,
+        folderNumber: file.appProperties.folderNumber,
+        photo: file.thumbnailLink,
+      }));
+
+    res.status(200).json(submissions);
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    if (error.response && error.response.data) {
+        console.error('Google API Error:', error.response.data.error);
+        return res.status(500).json({ message: 'Google API Error: ' + error.response.data.error.message });
+    }
+    res.status(500).json({ message: `Server error: ${error.message}` });
+  }
+});
+
+// Endpoint to delete a submission
+app.delete('/submissions/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    if (!fileId) {
+      return res.status(400).json({ message: 'File ID is required.' });
+    }
+
+    const drive = getDriveClient();
+    await drive.files.delete({ fileId });
+
+    console.log(`File with ID: ${fileId} deleted successfully.`);
+    res.status(200).json({ message: 'File deleted successfully.' });
+  } catch (error) {
+    console.error(`Error deleting file ${req.params.fileId}:`, error);
+    if (error.response && error.response.data) {
+        console.error('Google API Error:', error.response.data.error);
+        return res.status(500).json({ message: 'Google API Error: ' + error.response.data.error.message });
+    }
+    res.status(500).json({ message: `Server error: ${error.message}` });
+  }
+});
+
+
 // Health check endpoint
 app.get('/', (req, res) => {
   res.status(200).send('Photo Illusions Backend is running!');
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
