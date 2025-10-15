@@ -34,8 +34,8 @@ function dataUrlToBlob(dataUrl: string): Blob {
 export async function uploadToDrive(photoDataUrl: string, email: string, folderNumber: string): Promise<{ success: boolean; message: string }> {
   console.log('Starting upload process...');
 
-  // IMPORTANT: Replace this URL with the real URL of your deployed backend service (e.g., from Render).
-  const backendUrl = 'https://your-render-service-url.onrender.com/upload';
+  // This points to the local backend. For production, replace with your deployed service URL.
+  const backendUrl = 'http://localhost:3001/upload';
   
   const fileName = `${email}-${folderNumber}-${Date.now()}.jpg`;
   const imageBlob = dataUrlToBlob(photoDataUrl);
