@@ -1,0 +1,7 @@
+{
+  "name": "Photo Illusions",
+  "description": "An application for event photographers to capture customer email addresses and associate them with photos of prints for later digital delivery.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
