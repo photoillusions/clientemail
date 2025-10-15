@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
-import { CameraIcon } from './icons/CameraIcon';
+import { CameraIcon } from './icons/CameraIcon.tsx';
 
 interface CameraProps {
   onCapture: (imageDataUrl: string) => void;
